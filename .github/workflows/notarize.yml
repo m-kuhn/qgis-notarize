@@ -73,10 +73,13 @@ jobs:
           done
 
           # Find leftover files to be removed
-          find "$APP_PATH/Contents/PlugIns" -name "*.o" | while read -r file; do
+          find "$APP_PATH/Contents/PlugIns" -name "*.o" -name "*.a" | while read -r file; do
             echo "Remove $file"
             rm $file
           done
+
+          # Find leftover files not yet removed
+          find "$APP_PATH/Contents/PlugIns" -type f -exec file {} \; | grep -v 'Mach-O'
 
           # Step 1: Sign all signable files inside the .app
           find "$APP_PATH" -type f \( \
