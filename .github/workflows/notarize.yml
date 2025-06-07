@@ -51,8 +51,7 @@ jobs:
 
       - name: Find and sign app
         run: |
-          APP_PATH=$(ls $(pwd)/*.app)
-          ls $APP
+          APP_PATH=$(echo ./*.app)
 
           # Step 1: Find all signable files
           find "$APP_PATH" -type f \( \
