@@ -52,10 +52,29 @@ jobs:
       - name: Find and sign app in mounted DMG
         run: |
           APP_PATH=$(find "$MOUNT_POINT" -name "*.app" -maxdepth 1)
-          echo "Signing app at: $APP_PATH"
-          codesign --force --deep --options runtime --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$APP_PATH"
-          codesign --verify --deep --strict "$APP_PATH"
 
+          # Step 1: Find all signable files
+          find "$APP_PATH" -type f \( \
+              -name "*.dylib" -or \
+              -name "*.so" -or \
+              -perm +111 \
+            \) -print0 | while IFS= read -r -d '' file; do
+              echo "Signing: $file"
+              codesign --force --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$file"
+          done
+
+          # Step 2: Sign embedded frameworks or .app bundles
+          find "$APP_PATH" -type d \( -name "*.framework" -or -name "*.app" \) -print0 | while IFS= read -r -d '' bundle; do
+              echo "Signing bundle: $bundle"
+              codesign --force --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$bundle"
+          done
+
+          # Step 3: Finally sign the top-level app with hardened runtime and entitlements
+          codesign --force --options runtime --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$APP_PATH"
+
+          # Step 4: Verify signature
+          codesign --verify --deep --strict "$APP_PATH"
+          
       - name: Unmount the DMG
         run: |
           hdiutil detach "$MOUNT_POINT" -quiet
