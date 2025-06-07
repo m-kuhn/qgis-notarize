@@ -76,9 +76,6 @@ jobs:
           # Find leftover files to be removed
           find "$PLUGIN_DIR" -type f \( -name "*.o" -o -name "*.a" -o -name "*.prl" \) -print -delete
 
-          # Find leftover files not yet removed
-          find "$APP_PATH/Contents/PlugIns" -type f -exec file {} \; | grep -v 'Mach-O'
-
           # Step 1: Sign all signable files inside the .app
           find "$APP_PATH" -type f \( \
             -name "*.so" -or \
