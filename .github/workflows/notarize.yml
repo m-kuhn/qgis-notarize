@@ -46,7 +46,8 @@ jobs:
           echo "$MOUNT_OUTPUT"
           MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep -oE '/Volumes/.*' | head -n 1)
           echo "MOUNT_POINT=$MOUNT_POINT"
-          cp -R "$MOUNT_POINT/*.app" .
+          ls "$MOUNT_POINT"
+          cp -R "$MOUNT_POINT"/*.app .
 
       - name: Find and sign app
         run: |
