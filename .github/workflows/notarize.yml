@@ -60,9 +60,8 @@ jobs:
           # Make target script directory
           mkdir -p "$SCRIPT_DIR"
 
-
           # Find non-Mach-O files in Contents/MacOS (e.g. .py, .sh, text files, etc.)
-          find "$MACOS_DIR" -name "*.py" | while read -r file; do
+          find "$MACOS_DIR" -type f -exec file {} \; | grep -v 'Mach-O' | cut -d: -f1 | while read -r file; do
             fname=$(basename "$file")
             echo "Relocating $fname"
 
