@@ -131,6 +131,8 @@ jobs:
 
           # Step 4: Verify
           codesign --verify --deep --strict "$APP_PATH"
+
+          spctl --assess --type exec --verbose=4 ./QGIS-PR60039.app
           
 
       - name: Recreate DMG (clean signed app)
@@ -145,6 +147,8 @@ jobs:
             -fs HFS+ \
             -format UDZO \
             notarized.dmg
+
+          codesign --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" --timestamp notarized.dmg
 
       - name: Notarize the new DMG
         run: |
