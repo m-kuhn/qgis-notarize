@@ -42,9 +42,10 @@ jobs:
       - name: Mount the DMG
         id: mount
         run: |
-          MOUNT_OUTPUT=$(hdiutil attach ./downloaded-artifacts/*.dmg -nobrowse -quiet)
+          MOUNT_OUTPUT=$(hdiutil attach ./downloaded-artifacts/*.dmg)
           echo "$MOUNT_OUTPUT"
-          MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep -o '/Volumes/[^ ]*')
+          MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep -oE '/Volumes/.*' | head -n 1)
+          echo "MOUNT_POINT=$MOUNT_POINT"
           echo "MOUNT_POINT=$MOUNT_POINT" >> "$GITHUB_ENV"
 
 
