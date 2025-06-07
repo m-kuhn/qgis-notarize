@@ -1,0 +1,88 @@
+name: Notarize and Release DMG
+
+on:
+  repository_dispatch:
+    types: [new-release]
+  push:
+
+jobs:
+  notarize:
+    runs-on: macos-latest
+    env:
+      KEYCHAIN_NAME: notary-keychain
+      KEYCHAIN_PASSWORD: dummy
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up GitHub CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Download artifact from qgis/QGIS
+        run: |
+          gh run download 15379869828 \
+            --repo qgis/QGIS \
+            --name qgis-PR60039-dmg \
+            --dir ./downloaded-artifacts
+            
+      - name: Import signing certificate
+        run: |
+          echo "${{ secrets.APPLE_DEVELOPER_ID_P12_BASE64 }}" | base64 --decode > cert.p12
+          P12_PATH=cert.p12
+          P12_PASSWORD=${{ secrets.APPLE_DEVELOPER_ID_P12_PASSWORD }}
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security import "$P12_PATH" -k "$KEYCHAIN_NAME" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-keychain-settings -t 3600 -l "$KEYCHAIN_NAME"
+          security list-keychains -d user -s "$KEYCHAIN_NAME" $(security list-keychains -d user | tr -d '"')
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+      - name: Mount the DMG
+        id: mount
+        run: |
+          MOUNT_OUTPUT=$(hdiutil attach ./downloaded-artifacts/*.dmg -nobrowse -quiet)
+          echo "$MOUNT_OUTPUT"
+          MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep -o '/Volumes/[^ ]*')
+          echo "MOUNT_POINT=$MOUNT_POINT" >> "$GITHUB_ENV"
+
+
+      - name: Find and sign app in mounted DMG
+        run: |
+          APP_PATH=$(find "$MOUNT_POINT" -name "*.app" -maxdepth 1)
+          echo "Signing app at: $APP_PATH"
+          codesign --force --deep --options runtime --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$APP_PATH"
+          codesign --verify --deep --strict "$APP_PATH"
+
+      - name: Unmount the DMG
+        run: |
+          hdiutil detach "$MOUNT_POINT" -quiet
+
+
+      - name: Recreate DMG (required after signing)
+        run: |
+          mkdir repack
+          hdiutil attach ./downloaded-artifacts/*.dmg -mountpoint ./repack/mount -nobrowse -quiet
+          cp -R ./repack/mount/* ./repack/
+          hdiutil detach ./repack/mount -quiet
+          hdiutil create -volname "SignedApp" -srcfolder ./repack -fs HFS+ -format UDZO notarized.dmg
+
+      - name: Notarize the new DMG
+        run: |
+          echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
+          xcrun notarytool submit notarized.dmg \
+            --key authkey.p8 \
+            --key-id "${{ secrets.API_KEY_ID }}" \
+            --issuer "${{ secrets.API_KEY_ISSUER_ID }}" \
+            --wait
+
+      - name: Staple the DMG
+        run: |
+          xcrun stapler staple notarized.dmg
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notarized-dmg
+          path: notarized.dmg
