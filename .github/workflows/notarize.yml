@@ -53,6 +53,8 @@ jobs:
         run: |
           APP_PATH=$(find "$MOUNT_POINT" -name "*.app" -maxdepth 1)
 
+          file "/Volumes/QGIS-PR60039 Installer/QGIS-PR60039.app/Contents/Frameworks/lib/python3.11/lib-dynload/_asyncio.cpython-311-darwin.so"
+
           # Step 1: Find all signable files
           find "$APP_PATH" -type f \( \
               -name "*.dylib" -or \
