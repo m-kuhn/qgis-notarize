@@ -56,7 +56,7 @@ jobs:
           # Step 0: relocate python files
           MACOS_DIR="$APP_PATH/Contents/MacOS"
           PLUGIN_DIR="$APP_PATH/Contents/PlugIns"
-          PLUGIN_DIR="$APP_PATH/Contents/Frameworks"
+          FRAMEWORKS_DIR="$APP_PATH/Contents/Frameworks"
           SCRIPT_DIR="$APP_PATH/Contents/Resources/scripts"
 
           # Make target script directory
