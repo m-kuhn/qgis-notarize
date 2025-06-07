@@ -133,13 +133,18 @@ jobs:
           codesign --verify --deep --strict "$APP_PATH"
           
 
-      - name: Recreate DMG (required after signing)
+      - name: Recreate DMG (clean signed app)
         run: |
-          mkdir repack
-          hdiutil attach ./downloaded-artifacts/*.dmg -mountpoint ./repack/mount -nobrowse -quiet
-          cp -R ./repack/mount/* ./repack/
-          hdiutil detach ./repack/mount -quiet
-          hdiutil create -volname "SignedApp" -srcfolder ./repack -fs HFS+ -format UDZO notarized.dmg
+          # Create staging directory
+          mkdir -p dmg-root
+
+          # Build a new compressed, notarization-ready DMG
+          hdiutil create \
+            -volname "QGIS Installer" \
+            -srcfolder *.app \
+            -fs HFS+ \
+            -format UDZO \
+            notarized.dmg
 
       - name: Notarize the new DMG
         run: |
