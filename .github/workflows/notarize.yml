@@ -52,6 +52,7 @@ jobs:
       - name: Find and sign app
         run: |
           APP_PATH=$(ls *.app)
+          ls $APP
 
           # Step 1: Find all signable files
           find "$APP_PATH" -type f \( \
@@ -62,18 +63,22 @@ jobs:
               echo "Signing: $file"
               codesign --force --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$file"
           done
+          echo "Step 1 done"
 
           # Step 2: Sign embedded frameworks or .app bundles
           find "$APP_PATH" -type d \( -name "*.framework" -or -name "*.app" \) -print0 | while IFS= read -r -d '' bundle; do
               echo "Signing bundle: $bundle"
               codesign --force --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$bundle"
           done
+          echo "Step 2 done"
 
           # Step 3: Finally sign the top-level app with hardened runtime and entitlements
           codesign --force --options runtime --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$APP_PATH"
+          echo "Step 3 done"
 
           # Step 4: Verify signature
           codesign --verify --deep --strict "$APP_PATH"
+          echo "Step 4 done"
           
 
       - name: Recreate DMG (required after signing)
