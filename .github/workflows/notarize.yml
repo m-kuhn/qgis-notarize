@@ -132,8 +132,6 @@ jobs:
           # Step 4: Verify
           codesign --verify --deep --strict "$APP_PATH"
 
-          spctl --assess --type exec --verbose=4 ./QGIS-PR60039.app
-          
 
       - name: Recreate DMG (clean signed app)
         run: |
@@ -158,6 +156,7 @@ jobs:
             --key-id "${{ secrets.API_KEY_ID }}" \
             --issuer "${{ secrets.API_KEY_ISSUER_ID }}" \
             --wait
+
 
       - name: Staple the DMG
         run: |
