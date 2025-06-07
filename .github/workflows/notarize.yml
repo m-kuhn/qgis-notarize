@@ -135,13 +135,12 @@ jobs:
 
       - name: Recreate DMG (clean signed app)
         run: |
-          # Create staging directory
-          mkdir -p dmg-root
+          APP_PATH=$(echo ./*.app)
 
           # Build a new compressed, notarization-ready DMG
           hdiutil create \
             -volname "QGIS Installer" \
-            -srcfolder *.app \
+            -srcfolder $APP_PATH \
             -fs HFS+ \
             -format UDZO \
             notarized.dmg
@@ -149,6 +148,12 @@ jobs:
           codesign --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" --timestamp notarized.dmg
 
           spctl -a -v --type open notarized.dmg
+
+          hdiutil attach notarized.dmg -nobrowse -quiet
+          MOUNT_POINT=$(mount | grep "notarized.dmg" | awk '{print $3}')
+          ls "$MOUNT_POINT"
+          detach "$MOUNT_POINT"
+
 
       - name: Notarize the new DMG
         run: |
