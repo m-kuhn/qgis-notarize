@@ -148,6 +148,8 @@ jobs:
 
           codesign --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" --timestamp notarized.dmg
 
+          spctl -a -v --type open notarized.dmg
+
       - name: Notarize the new DMG
         run: |
           echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
