@@ -56,6 +56,7 @@ jobs:
           # Step 0: relocate python files
           MACOS_DIR="$APP_PATH/Contents/MacOS"
           PLUGIN_DIR="$APP_PATH/Contents/PlugIns"
+          PLUGIN_DIR="$APP_PATH/Contents/Frameworks"
           SCRIPT_DIR="$APP_PATH/Contents/Resources/scripts"
 
           # Make target script directory
@@ -75,6 +76,28 @@ jobs:
 
           # Find leftover files to be removed
           find "$PLUGIN_DIR" -type f \( -name "*.o" -o -name "*.a" -o -name "*.prl" \) -print -delete
+          
+          # 1. Find non-Mach-O files in Frameworks
+          non_macho_files=$(find "$FRAMEWORKS_DIR" -type f -exec file {} \; | grep -v 'Mach-O' | cut -d: -f1)
+
+          if [ -n "$non_macho_files" ]; then
+            echo "❌ Found non-Mach-O files in Frameworks (not allowed):"
+            echo "$non_macho_files"
+            echo "💥 Aborting. You must relocate or remove these files."
+            exit 1
+          fi
+
+          # 2. (Optional) Warn if Mach-O files are in strange subfolders (like python3.11)
+          bad_locations=$(find "$FRAMEWORKS_DIR/lib/python3.11" -type f -exec file {} \; 2>/dev/null | grep 'Mach-O' | cut -d: -f1)
+
+          if [ -n "$bad_locations" ]; then
+            echo "❌ Found Mach-O binaries inside Python lib folders (also not allowed):"
+            echo "$bad_locations"
+            echo "💥 Aborting. These should be in Frameworks/, not under lib/python3.11."
+            exit 1
+          fi
+
+          echo "✅ Frameworks folder is clean and ready for signing."
 
           # Step 1: Sign all signable files inside the .app
           find "$APP_PATH" -type f \( \
