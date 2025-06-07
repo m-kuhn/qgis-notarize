@@ -58,6 +58,7 @@ jobs:
           PLUGIN_DIR="$APP_PATH/Contents/PlugIns"
           FRAMEWORKS_DIR="$APP_PATH/Contents/Frameworks"
           SCRIPT_DIR="$APP_PATH/Contents/Resources/scripts"
+          PYTHON_DIR="$APP_PATH/Contents/Resources/python3.11"
 
           # Make target script directory
           mkdir -p "$SCRIPT_DIR"
@@ -76,7 +77,12 @@ jobs:
 
           # Find leftover files to be removed
           find "$PLUGIN_DIR" -type f \( -name "*.o" -o -name "*.a" -o -name "*.prl" \) -print -delete
-          
+
+          PYTHON_MODULES_DIR=$(find "$FRAMEWORKS_DIR/lib" -maxdepth 1 -type d -name "python3.*" | head -n 1)
+
+          mv "$PYTHON_MODULES_DIR" "$PYTHON_DIR"
+          ln -s "../../Resources/python3.11" "$PYTHON_MODULES_DIR"
+
           # 1. Find non-Mach-O files in Frameworks
           non_macho_files=$(find "$FRAMEWORKS_DIR" -type f -exec file {} \; | grep -v 'Mach-O' | cut -d: -f1)
 
