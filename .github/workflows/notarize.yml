@@ -53,6 +53,25 @@ jobs:
         run: |
           APP_PATH=$(echo ./*.app)
 
+          # Step 0: relocate python files
+          MACOS_DIR="$APP_PATH/Contents/MacOS"
+          SCRIPT_DIR="$APP_PATH/Contents/Resources/scripts"
+
+          # Make target script directory
+          mkdir -p "$SCRIPT_DIR"
+
+          # Find non-Mach-O files in Contents/MacOS (e.g. .py, .sh, text files, etc.)
+          find "$MACOS_DIR" -type f ! -perm +111 ! -name "*.dylib" ! -name "*.so" | while read -r file; do
+            fname=$(basename "$file")
+            echo "Relocating $fname"
+
+            # Move to scripts dir
+            mv "$file" "$SCRIPT_DIR/$fname"
+
+            # Create symlink back in MacOS dir
+            ln -s "../Resources/scripts/$fname" "$MACOS_DIR/$fname"
+          done
+
           # Step 1: Sign all signable files inside the .app
           find "$APP_PATH" -type f \( \
             -name "*.so" -or \
