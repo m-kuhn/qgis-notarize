@@ -55,6 +55,7 @@ jobs:
 
           # Step 0: relocate python files
           MACOS_DIR="$APP_PATH/Contents/MacOS"
+          PLUGIN_DIR="$APP_PATH/Contents/PlugIns"
           SCRIPT_DIR="$APP_PATH/Contents/Resources/scripts"
 
           # Make target script directory
@@ -73,10 +74,7 @@ jobs:
           done
 
           # Find leftover files to be removed
-          find "$APP_PATH/Contents/PlugIns" -name "*.o" -name "*.a" | while read -r file; do
-            echo "Remove $file"
-            rm $file
-          done
+          find "$PLUGIN_DIR" -type f \( -name "*.o" -o -name "*.a" -o -name "*.prl" \) -print -delete
 
           # Find leftover files not yet removed
           find "$APP_PATH/Contents/PlugIns" -type f -exec file {} \; | grep -v 'Mach-O'
