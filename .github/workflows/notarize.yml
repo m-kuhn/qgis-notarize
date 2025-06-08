@@ -136,6 +136,7 @@ jobs:
       - name: Recreate DMG (clean signed app)
         run: |
           APP_PATH=$(echo ./*.app)
+          codesign -d --entitlements :- $APP_PATH
 
           # Build a new compressed, notarization-ready DMG
           hdiutil create \
