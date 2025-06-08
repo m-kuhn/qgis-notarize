@@ -118,8 +118,8 @@ jobs:
               codesign --force --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$file" || {
                 echo "⚠️ Failed to sign: $file"
               }
-              echo " x86_64: $(codesign -d --verbose=4 --arch x86_64 Ò"$file\")"
-              echo " arm64: $(codesign -d --verbose=4 --arch arm64 Ò"$file\")"
+              echo " x86_64: $(codesign -d --verbose=4 --arch x86_64 "$file")"
+              echo " arm64: $(codesign -d --verbose=4 --arch arm64 "$file")"
             fi
           done
 
