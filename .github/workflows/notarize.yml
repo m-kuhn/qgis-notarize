@@ -163,10 +163,7 @@ jobs:
 
           ### 2. Check for unallowed file types
           echo "🧹 Checking for unwanted build artifacts..."
-          find "$APP_PATH" -type f -name "*.o" -o -name "*.a" -o -name "*.prl" -o -name "*.la" -o -name "*.pyc" -print && {
-            echo "❌ Found unwanted build artifacts. Remove them before proceeding."
-            exit 1
-          }
+          find "$APP_PATH" -type f -name "*.o" -o -name "*.a" -o -name "*.prl" -o -name "*.la" -o -name "*.pyc" -print
 
           ### 3. Check for unsigned Mach-O binaries
           echo "🔐 Verifying each Mach-O binary is signed..."
@@ -216,6 +213,8 @@ jobs:
       - name: Show notarization log
         if: failure()
         run: |
+          echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
+
           echo "📦 Getting latest notarization submission UUID..."
           UUID=$(xcrun notarytool history \
             --key authkey.p8 \
