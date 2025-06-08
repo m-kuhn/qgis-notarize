@@ -114,9 +114,12 @@ jobs:
             # Only sign Mach-O binaries
             if file "$file" | grep -q 'Mach-O'; then
               echo "Signing: $file"
+              codesign --remove-signature "$file" 2>/dev/null || true
               codesign --force --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$file" || {
                 echo "⚠️ Failed to sign: $file"
               }
+              echo " x86_64: $(codesign -d --verbose=4 --arch x86_64 Ò"$file\")"
+              echo " arm64: $(codesign -d --verbose=4 --arch arm64 Ò"$file\")"
             fi
           done
 
@@ -216,10 +219,13 @@ jobs:
           echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
 
           echo "📦 Getting latest notarization submission UUID..."
-          UUID=$(xcrun notarytool history \
+          HISTORY=$(xcrun notarytool history \
             --key authkey.p8 \
             --key-id "${{ secrets.API_KEY_ID }}" \
-            --issuer "${{ secrets.API_KEY_ISSUER_ID }}" | grep 'ID:' | head -n 1 | awk '{print $2}')
+            --issuer "${{ secrets.API_KEY_ISSUER_ID }}" 
+          
+          echo $HISTORY
+          UUID = echo "$HISTORY" | grep 'ID:' | head -n 1 | awk '{print $2}')
 
           echo "✅ Submission ID: $UUID"
           echo "📄 Fetching notarization log..."
