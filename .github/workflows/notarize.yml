@@ -225,7 +225,7 @@ jobs:
             --issuer "${{ secrets.API_KEY_ISSUER_ID }}" 
           
           echo $HISTORY
-          UUID = echo "$HISTORY" | grep 'ID:' | head -n 1 | awk '{print $2}')
+          UUID=$(echo "$HISTORY" | grep 'ID:' | head -n 1 | awk '{print $2}'))
 
           echo "✅ Submission ID: $UUID"
           echo "📄 Fetching notarization log..."
