@@ -147,13 +147,6 @@ jobs:
 
           codesign --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" --timestamp notarized.dmg
 
-          MOUNT_OUTPUT=$(hdiutil attach notarized.dmg)
-          echo "$MOUNT_OUTPUT"
-          MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep -oE '/Volumes/.*' | head -n 1)
-          echo "MOUNT_POINT=$MOUNT_POINT"
-          ls "$MOUNT_POINT"
-          hidutil detach "$MOUNT_POINT"
-
           spctl -a -v --type open notarized.dmg
 
       - name: Notarize the new DMG
