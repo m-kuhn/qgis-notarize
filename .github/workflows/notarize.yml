@@ -49,7 +49,7 @@ jobs:
           ls "$MOUNT_POINT"
           cp -R "$MOUNT_POINT"/*.app .
 
-      - name: Find and sign app
+      - name: Clean and sign app
         run: |
           APP_PATH=$(echo ./*.app)
 
@@ -63,7 +63,7 @@ jobs:
           # Make target script directory
           mkdir -p "$SCRIPT_DIR"
 
-          # Find non-Mach-O files in Contents/MacOS (e.g. .py, .sh, text files, etc.)
+          # Find non-Mach-O files in Contents/MacOS (Should be py files)
           find "$MACOS_DIR" -type f -exec file {} \; | grep -v 'Mach-O' | cut -d: -f1 | while read -r file; do
             fname=$(basename "$file")
             echo "Relocating $fname"
@@ -83,7 +83,7 @@ jobs:
           mv "$PYTHON_MODULES_DIR" "$PYTHON_DIR"
           ln -s "../../Resources/python3.11" "$PYTHON_MODULES_DIR"
 
-          # 1. Find non-Mach-O files in Frameworks
+          # Find non-Mach-O files in Frameworks
           non_macho_files=$(find "$FRAMEWORKS_DIR" -type f -exec file {} \; | grep -v 'Mach-O' | cut -d: -f1)
 
           if [ -n "$non_macho_files" ]; then
@@ -93,7 +93,7 @@ jobs:
             exit 1
           fi
 
-          # 2. (Optional) Warn if Mach-O files are in strange subfolders (like python3.11)
+          # Warn if Mach-O files are in strange subfolders (like python3.11)
           bad_locations=$(find "$FRAMEWORKS_DIR/lib/python3.11" -type f -exec file {} \; 2>/dev/null | grep 'Mach-O' | cut -d: -f1)
 
           if [ -n "$bad_locations" ]; then
@@ -155,6 +155,24 @@ jobs:
             --key-id "${{ secrets.API_KEY_ID }}" \
             --issuer "${{ secrets.API_KEY_ISSUER_ID }}" \
             --wait
+
+      - name: Show notarization log
+        if: failure()
+        run: |
+          echo "📦 Getting latest notarization submission UUID..."
+          UUID=$(xcrun notarytool history \
+            --key "${{ secrets.APPSTORE_PRIVATE_KEY }}" \
+            --key-id "${{ secrets.API_KEY_ID }}" \
+            --issuer "${{ secrets.API_KEY_ISSUER_ID }}" \
+            --limit 1 | grep 'ID:' | awk '{print $2}')
+
+          echo "✅ Submission ID: $UUID"
+          echo "📄 Fetching notarization log..."
+
+          xcrun notarytool log "$UUID" \
+            --key "${{ secrets.APPSTORE_PRIVATE_KEY }}" \
+            --key-id "${{ secrets.API_KEY_ID }}" \
+            --issuer "${{ secrets.API_KEY_ISSUER_ID }}"
 
       - name: Staple the DMG
         run: |
