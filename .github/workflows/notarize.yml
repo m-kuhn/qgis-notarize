@@ -152,7 +152,7 @@ jobs:
           MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep -oE '/Volumes/.*' | head -n 1)
           echo "MOUNT_POINT=$MOUNT_POINT"
           ls "$MOUNT_POINT"
-          detach "$MOUNT_POINT"
+          hidutil detach "$MOUNT_POINT"
 
           spctl -a -v --type open notarized.dmg
 
