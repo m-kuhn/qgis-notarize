@@ -76,7 +76,7 @@ jobs:
           done
 
           # Find leftover files to be removed
-          find "$APP_PATH" -type f \( -name "*.o" -o -name "*.a" -o -name "*.prl" -o -name "*.pyc" \) -print -delete
+          find "$APP_PATH" -type f \( -name "*.o" -o -name "*.a" -o -name "*.prl"  -o -name "*.la" -o -name "*.pyc" \) -print -delete
 
           PYTHON_MODULES_DIR=$(find "$FRAMEWORKS_DIR/lib" -maxdepth 1 -type d -name "python3.*" | head -n 1)
 
