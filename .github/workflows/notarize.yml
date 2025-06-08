@@ -118,7 +118,8 @@ jobs:
               codesign --force --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$file" || {
                 echo "⚠️ Failed to sign: $file"
               }
-              codesign -d --verbose=4  "$file")
+              lipo -info "$file"
+              codesign -d --verbose=4 "$file"
             fi
           done
 
