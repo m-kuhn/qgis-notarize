@@ -76,7 +76,7 @@ jobs:
           done
 
           # Find leftover files to be removed
-          find "$PLUGIN_DIR" -type f \( -name "*.o" -o -name "*.a" -o -name "*.prl" \) -print -delete
+          find "$APP_PATH" -type f \( -name "*.o" -o -name "*.a" -o -name "*.prl" -o -name "*.pyc" \) -print -delete
 
           PYTHON_MODULES_DIR=$(find "$FRAMEWORKS_DIR/lib" -maxdepth 1 -type d -name "python3.*" | head -n 1)
 
@@ -146,6 +146,63 @@ jobs:
             notarized.dmg
 
           codesign --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" --timestamp notarized.dmg
+
+      - name: Presubmission check
+        run: |
+          #!/bin/bash
+          APP_PATH="$(echo ./*.app)"
+          DMG_PATH="notarized.dmg"
+
+          echo "🔍 Verifying .app and .dmg structure before notarization"
+
+          ### 1. Verify .app exists
+          if [ ! -d "$APP_PATH" ]; then
+            echo "❌ ERROR: App bundle not found at $APP_PATH"
+            exit 1
+          fi
+
+          ### 2. Check for unallowed file types
+          echo "🧹 Checking for unwanted build artifacts..."
+          find "$APP_PATH" -type f \( -name "*.o" -or -name "*.a" -or -name "*.prl" -or -name "*.la" -or -name "*.pyc" \) -print && {
+            echo "❌ Found unwanted build artifacts. Remove them before proceeding."
+            exit 1
+          }
+
+          ### 3. Check for unsigned Mach-O binaries
+          echo "🔐 Verifying each Mach-O binary is signed..."
+          find "$APP_PATH" -type f -exec file {} \; | grep 'Mach-O' | cut -d: -f1 | while read -r f; do
+            if ! codesign -dvv "$f" >/dev/null 2>&1; then
+              echo "❌ Not signed or broken signature: $f"
+              exit 1
+            fi
+          done
+
+          ### 4. Check .app with deep signature verification
+          echo "✅ Verifying full app bundle signature..."
+          if ! codesign --verify --deep --strict --verbose=2 "$APP_PATH"; then
+            echo "❌ App bundle verification failed"
+            exit 1
+          fi
+
+          ### 5. Print top-level app entitlements
+          echo "📄 App entitlements:"
+          codesign -d --entitlements :- "$APP_PATH" || echo "⚠️ No entitlements found (may be OK)"
+
+          ### 6. Check .dmg exists and is signed
+          if [ ! -f "$DMG_PATH" ]; then
+            echo "❌ ERROR: DMG not found at $DMG_PATH"
+            exit 1
+          fi
+
+          echo "🔐 Verifying .dmg signature..."
+          if ! codesign -dv "$DMG_PATH" >/dev/null 2>&1; then
+            echo "❌ DMG is not signed. Use codesign before submitting:"
+            echo "codesign --sign 'Developer ID Application' --timestamp --keychain \"$KEYCHAIN_NAME\" $DMG_PATH"
+            exit 1
+          fi
+
+          echo "✅ Pre-submission checks passed. Safe to submit to notarytool."
+
 
       - name: Notarize the new DMG
         run: |
