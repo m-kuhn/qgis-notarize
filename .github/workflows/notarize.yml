@@ -147,7 +147,7 @@ jobs:
 
           codesign --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" --timestamp notarized.dmg
 
-          hdiutil attach notarized.dmg -nobrowse -quiet
+          hdiutil attach notarized.dmg -nobrowse
           MOUNT_POINT=$(mount | grep "notarized.dmg" | awk '{print $3}')
           ls "$MOUNT_POINT"
           detach "$MOUNT_POINT"
