@@ -163,7 +163,7 @@ jobs:
 
           ### 2. Check for unallowed file types
           echo "🧹 Checking for unwanted build artifacts..."
-          find "$APP_PATH" -type f \( -name "*.o" -or -name "*.a" -or -name "*.prl" -or -name "*.la" -or -name "*.pyc" \) -print && {
+          find "$APP_PATH" -type f -name "*.o" -o -name "*.a" -o -name "*.prl" -o -name "*.la" -o -name "*.pyc" -print && {
             echo "❌ Found unwanted build artifacts. Remove them before proceeding."
             exit 1
           }
@@ -218,7 +218,7 @@ jobs:
         run: |
           echo "📦 Getting latest notarization submission UUID..."
           UUID=$(xcrun notarytool history \
-            --key "${{ secrets.APPSTORE_PRIVATE_KEY }}" \
+            --key authkey.p8 \
             --key-id "${{ secrets.API_KEY_ID }}" \
             --issuer "${{ secrets.API_KEY_ISSUER_ID }}" \
             --limit 1 | grep 'ID:' | awk '{print $2}')
@@ -227,7 +227,7 @@ jobs:
           echo "📄 Fetching notarization log..."
 
           xcrun notarytool log "$UUID" \
-            --key "${{ secrets.APPSTORE_PRIVATE_KEY }}" \
+            --key authkey.p8 \
             --key-id "${{ secrets.API_KEY_ID }}" \
             --issuer "${{ secrets.API_KEY_ISSUER_ID }}"
 
