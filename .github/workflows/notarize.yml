@@ -1,9 +1,10 @@
 name: Notarize and Release DMG
 
 on:
-  repository_dispatch:
-    types: [new-release]
   push:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
 
 jobs:
   notarize:
@@ -13,21 +14,44 @@ jobs:
       KEYCHAIN_PASSWORD: dummy
 
     steps:
-      - name: Checkout code
+      - name: 🐣 Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up GitHub CLI
+      - name: 🌾 Set up GitHub CLI
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-      - name: Download artifact from qgis/QGIS
+      - name: Get latest successful run ID
         run: |
-          gh run download 15379869828 \
+          run_id=$(gh run list --repo "qgis/QGIS" \
+                    --workflow "🍎 Build - MacOS Qt6" \
+                    --limit 1 \
+                    --json databaseId,status,conclusion \
+                    --jq '.[] | select(.status == "completed" and .conclusion == "success") | .databaseId')
+          echo "Found run_id=$run_id"
+          echo "RUN_ID=$run_id" >> $GITHUB_ENV
+
+      - name: List artifacts from that run
+        run: |
+          artifact_name=$(gh api repos/qgis/QGIS/actions/runs/${RUN_ID}/artifacts \
+            --jq '.artifacts[] | select(.name | test("^qgis-.*-dmg$")) | .name' | head -n 1)
+
+          if [ -z "$artifact_name" ]; then
+            echo "❌ No matching artifact found for pattern qgis-*-dmg"
+            exit 1
+          fi
+
+          echo "Found artifact: $artifact_name"
+          echo "ARTIFACT_NAME=$artifact_name" >> $GITHUB_ENV
+
+      - name: 📥 Download artifact from qgis/QGIS
+        run: |
+          gh run download ${RUN_ID} \
             --repo qgis/QGIS \
-            --name qgis-PR60039-dmg \
+            --name ${ARTIFACT_NAME} \
             --dir ./downloaded-artifacts
             
-      - name: Import signing certificate
+      - name: 🔑 Import signing certificate
         run: |
           echo "${{ secrets.APPLE_DEVELOPER_ID_P12_BASE64 }}" | base64 --decode > cert.p12
           P12_PATH=cert.p12
@@ -39,7 +63,7 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN_NAME" $(security list-keychains -d user | tr -d '"')
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
 
-      - name: Mount the DMG
+      - name: 🐎 Mount the DMG
         id: mount
         run: |
           MOUNT_OUTPUT=$(hdiutil attach ./downloaded-artifacts/*.dmg)
@@ -49,7 +73,7 @@ jobs:
           ls -la "$MOUNT_POINT/.background"
           cp -R "$MOUNT_POINT"/*.app .
 
-      - name: Clean and sign app
+      - name: 🖋️ Clean and sign app
         run: |
           APP_PATH=$(echo ./*.app)
 
@@ -113,7 +137,7 @@ jobs:
           codesign --verify --deep --strict "$APP_PATH"
 
 
-      - name: Recreate DMG (clean signed app)
+      - name: 🔧 Recreate DMG (clean signed app)
         run: |
           APP_PATH=$(echo ./*.app)
 
@@ -127,7 +151,7 @@ jobs:
 
           codesign --sign "Developer ID Application" --timestamp --keychain "$KEYCHAIN_NAME" notarized.dmg
 
-      - name: Notarize the new DMG
+      - name: 🔏 Notarize the new DMG
         run: |
           echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
 
@@ -160,11 +184,11 @@ jobs:
             --key-id "${{ secrets.API_KEY_ID }}" \
             --issuer "${{ secrets.API_KEY_ISSUER_ID }}"
 
-      - name: Staple the DMG
+      - name: 🥓 Staple the DMG
         run: |
           xcrun stapler staple notarized.dmg
 
-      - name: Upload artifact
+      - name: 📤 Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: notarized-dmg
