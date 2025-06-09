@@ -109,7 +109,7 @@ jobs:
           find "$APP_PATH" -type f -name "*.so" -or -name "*.dylib" -print0 | while IFS= read -r -d '' file; do
             echo "Signing: $file"
             codesign --remove-signature "$file" 2>/dev/null || true
-            codesign --force --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$file" || {
+            codesign --force --sign "Developer ID Application"  --timestamp --keychain "$KEYCHAIN_NAME" "$file" || {
               echo "⚠️ Failed to sign: $file"
             }
             lipo -info "$file"
@@ -120,8 +120,7 @@ jobs:
             # Only sign Mach-O binaries
             if file "$file" | grep -q 'Mach-O'; then
               echo "Signing: $file"
-              codesign --remove-signature "$file" 2>/dev/null || true
-              codesign --force --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$file" || {
+              codesign --force --sign "Developer ID Application"  --timestamp --keychain "$KEYCHAIN_NAME" "$file" || {
                 echo "⚠️ Failed to sign: $file"
               }
               lipo -info "$file"
@@ -205,29 +204,18 @@ jobs:
       - name: Notarize the new DMG
         run: |
           echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
-          xcrun notarytool submit notarized.dmg \
-            --key authkey.p8 \
-            --key-id "${{ secrets.API_KEY_ID }}" \
-            --issuer "${{ secrets.API_KEY_ISSUER_ID }}" \
-            --wait
+          NOTARIZE_RESULT=$(xcrun notarytool submit notarized.dmg --key authkey.p8 --key-id "${{ secrets.API_KEY_ID }}" --issuer "${{ secrets.API_KEY_ISSUER_ID }}" --wait | tee /dev/stderr)
+          echo "$NOTARIZE_RESULT"
+          NOTARIZATION_ID=$(echo "$NOTARIZE_RESULT" | grep '^  id:' | awk '{print $2}'))
+          echo "📦 Notarization Submission ID: $NOTARIZATION_ID"
+          echo "NOTARIZATION_ID=$NOTARIZATION_ID" >> "$GITHUB_ENV"
 
-      - name: Show notarization log
+
+      - name: 📄 Show notarization log
         run: |
           echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
 
-          echo "📦 Getting latest notarization submission UUID..."
-          HISTORY=$(xcrun notarytool history \
-            --key authkey.p8 \
-            --key-id "${{ secrets.API_KEY_ID }}" \
-            --issuer "${{ secrets.API_KEY_ISSUER_ID }}" 
-
-          echo $HISTORY
-          UUID=$(echo "$HISTORY" | grep 'ID:' | head -n 1 | awk '{print $2}'))
-
-          echo "✅ Submission ID: $UUID"
-          echo "📄 Fetching notarization log..."
-
-          xcrun notarytool log "$UUID" \
+          xcrun notarytool log "$NOTARIZATION_ID" \
             --key authkey.p8 \
             --key-id "${{ secrets.API_KEY_ID }}" \
             --issuer "${{ secrets.API_KEY_ISSUER_ID }}"
