@@ -130,12 +130,25 @@ jobs:
       - name: Notarize the new DMG
         run: |
           echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
-          NOTARIZATION_RESULT=$(xcrun notarytool submit notarized.dmg --key authkey.p8 --key-id "${{ secrets.API_KEY_ID }}" --issuer "${{ secrets.API_KEY_ISSUER_ID }}" --wait | tee /dev/stderr)
-          echo "Notarization result: $NOTARIZATION_RESULT"
-          NOTARIZATION_ID=$(echo "$NOTARIZATION_RESULT" | grep '^  id:' | awk '{print $2}')
+
+          echo "📝 Submitting notarized.dmg to Apple Notary Service..."
+          submission_output=$(mktemp)
+          xcrun notarytool submit notarized.dmg \
+            --key authkey.p8 \
+            --key-id "${{ secrets.API_KEY_ID }}" \
+            --issuer "${{ secrets.API_KEY_ISSUER_ID }}" \
+            --wait | tee "$submission_output"
+
+          NOTARIZATION_ID=$(grep -m1 '^  id:' "$submission_output" | awk '{print $2}')
+
+          if [ -z "$NOTARIZATION_ID" ]; then
+            echo "❌ Failed to extract Notarization ID."
+            cat "$submission_output"
+            exit 1
+          fi
+
           echo "📦 Notarization Submission ID: $NOTARIZATION_ID"
           echo "NOTARIZATION_ID=$NOTARIZATION_ID" >> "$GITHUB_ENV"
-
 
       - name: 📄 Show notarization log
         if: always()
