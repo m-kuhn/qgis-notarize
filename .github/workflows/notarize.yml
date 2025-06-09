@@ -203,7 +203,6 @@ jobs:
 
           echo "✅ Pre-submission checks passed. Safe to submit to notarytool."
 
-
       - name: Notarize the new DMG
         run: |
           echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
@@ -238,6 +237,14 @@ jobs:
       - name: Staple the DMG
         run: |
           xcrun stapler staple notarized.dmg
+
+      
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: always()
+        env:
+          KEYCHAIN_NAME: notary-keychain
+          KEYCHAIN_PASSWORD: dummy
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
