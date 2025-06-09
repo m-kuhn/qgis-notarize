@@ -212,7 +212,6 @@ jobs:
             --wait
 
       - name: Show notarization log
-        if: failure()
         run: |
           echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
 
@@ -221,6 +220,17 @@ jobs:
             --key authkey.p8 \
             --key-id "${{ secrets.API_KEY_ID }}" \
             --issuer "${{ secrets.API_KEY_ISSUER_ID }}" 
+
+          echo $HISTORY
+          UUID=$(echo "$HISTORY" | grep 'ID:' | head -n 1 | awk '{print $2}'))
+
+          echo "✅ Submission ID: $UUID"
+          echo "📄 Fetching notarization log..."
+
+          xcrun notarytool log "$UUID" \
+            --key authkey.p8 \
+            --key-id "${{ secrets.API_KEY_ID }}" \
+            --issuer "${{ secrets.API_KEY_ISSUER_ID }}"
 
       - name: Staple the DMG
         run: |
