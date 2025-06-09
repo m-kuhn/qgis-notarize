@@ -23,10 +23,11 @@ jobs:
 
       - name: Get latest successful run ID
         run: |
-          gh run list --repo "qgis/QGIS" \
+          run_id=$(gh run list --repo "qgis/QGIS" \
                     --workflow "build-macos-qt6.yml" \
                     --limit 10 \
-                    --json databaseId,status,conclusion
+                    --json databaseId,status,conclusion | \
+                    jq '[.[] | select(.status == "completed" and .conclusion == "success")] | sort_by(.databaseId) | reverse | .[0].databaseId')
           echo "Found run_id=$run_id"
           echo "RUN_ID=$run_id" >> $GITHUB_ENV
 
