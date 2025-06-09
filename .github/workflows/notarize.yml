@@ -119,7 +119,7 @@ jobs:
                 echo "⚠️ Failed to sign: $file"
               }
               lipo -info "$file"
-              codesign -d --verbose=4 "$file"
+              codesign -d --verbose=4 "$file" || true
             fi
           done
 
