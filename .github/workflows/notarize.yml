@@ -46,7 +46,7 @@ jobs:
           echo "$MOUNT_OUTPUT"
           MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep -oE '/Volumes/.*' | head -n 1)
           echo "MOUNT_POINT=$MOUNT_POINT"
-          ls "$MOUNT_POINT"
+          ls -la "$MOUNT_POINT/.background"
           cp -R "$MOUNT_POINT"/*.app .
 
       - name: Clean and sign app
@@ -221,22 +221,10 @@ jobs:
             --key authkey.p8 \
             --key-id "${{ secrets.API_KEY_ID }}" \
             --issuer "${{ secrets.API_KEY_ISSUER_ID }}" 
-          
-          echo $HISTORY
-          UUID=$(echo "$HISTORY" | grep 'ID:' | head -n 1 | awk '{print $2}'))
-
-          echo "✅ Submission ID: $UUID"
-          echo "📄 Fetching notarization log..."
-
-          xcrun notarytool log "$UUID" \
-            --key authkey.p8 \
-            --key-id "${{ secrets.API_KEY_ID }}" \
-            --issuer "${{ secrets.API_KEY_ISSUER_ID }}"
 
       - name: Staple the DMG
         run: |
           xcrun stapler staple notarized.dmg
-
       
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
