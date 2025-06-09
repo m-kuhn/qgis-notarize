@@ -105,11 +105,18 @@ jobs:
 
           echo "✅ Frameworks folder is clean and ready for signing."
 
-          # Step 1: Sign all signable files inside the .app
-          find "$APP_PATH" -type f \
-            -name "*.so" -or \
-            -name "*.dylib" -or \
-            -print0 | while IFS= read -r -d '' file; do
+          # Step 1: Sign all libraries inside the .app
+          find "$APP_PATH" -type f -name "*.so" -or -name "*.dylib" -print0 | while IFS= read -r -d '' file; do
+            echo "Signing: $file"
+            codesign --remove-signature "$file" 2>/dev/null || true
+            codesign --force --sign "Developer ID Application" --keychain "$KEYCHAIN_NAME" "$file" || {
+              echo "⚠️ Failed to sign: $file"
+            }
+            lipo -info "$file"
+            codesign -dv "$file" 2>&1 | grep -i 'identifier\|signing time\|authority\|flags\|CDHash' || echo "❌ $file is unsigned or broken"
+          done
+          # Step 1.b: Sign all binaries inside the .app
+          find "$APP_PATH" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do
             # Only sign Mach-O binaries
             if file "$file" | grep -q 'Mach-O'; then
               echo "Signing: $file"
