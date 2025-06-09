@@ -100,7 +100,7 @@ jobs:
           # Step 1b: Sign all executables inside the .app
           find "$APP_PATH" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do
             echo "Signing: $file"
-            codesign --force --sign "Developer ID Application" --runtime --timestamp --keychain "$KEYCHAIN_NAME" "$file" || {
+            codesign --force --sign "Developer ID Application" --options runtime --timestamp --keychain "$KEYCHAIN_NAME" "$file" || {
               echo "⚠️ Failed to sign: $file"
             }
             codesign -dv "$file" 2>&1 | grep -i 'identifier\|signing time\|authority\|flags\|CDHash' || echo "❌ $file is unsigned or broken"
