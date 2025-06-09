@@ -178,6 +178,7 @@ jobs:
           echo "🔐 Verifying each Mach-O binary is signed..."
           find "$APP_PATH" -type f -exec file {} \; | grep 'Mach-O' | cut -d: -f1 | while read -r f; do
             if ! codesign -dvv "$f" >/dev/null 2>&1; then
+              codesign -dvv "$f"
               echo "❌ Not signed or broken signature: $f"
               exit 1
             fi
