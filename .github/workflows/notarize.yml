@@ -130,9 +130,9 @@ jobs:
       - name: Notarize the new DMG
         run: |
           echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
-          NOTARIZE_RESULT=$(xcrun notarytool submit notarized.dmg --key authkey.p8 --key-id "${{ secrets.API_KEY_ID }}" --issuer "${{ secrets.API_KEY_ISSUER_ID }}" --wait | tee /dev/stderr)
-          echo "$NOTARIZE_RESULT"
-          NOTARIZATION_ID=$(echo "$NOTARIZE_RESULT" | grep '^  id:' | awk '{print $2}')
+          NOTARIZATION_RESULT=$(xcrun notarytool submit notarized.dmg --key authkey.p8 --key-id "${{ secrets.API_KEY_ID }}" --issuer "${{ secrets.API_KEY_ISSUER_ID }}" --wait | tee /dev/stderr)
+          echo "Notarization result: $NOTARIZATION_RESULT"
+          NOTARIZATION_ID=$(echo "$NOTARIZATION_RESULT" | grep '^  id:' | awk '{print $2}')
           echo "📦 Notarization Submission ID: $NOTARIZATION_ID"
           echo "NOTARIZATION_ID=$NOTARIZATION_ID" >> "$GITHUB_ENV"
 
@@ -150,13 +150,6 @@ jobs:
       - name: Staple the DMG
         run: |
           xcrun stapler staple notarized.dmg
-      
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: always()
-        env:
-          KEYCHAIN_NAME: notary-keychain
-          KEYCHAIN_PASSWORD: dummy
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
