@@ -92,7 +92,9 @@ jobs:
           security import "$P12_PATH" -k "$KEYCHAIN_NAME" -P "$P12_PASSWORD" -T /usr/bin/codesign
           security set-keychain-settings -t 3600 -l "$KEYCHAIN_NAME"
           security list-keychains -d user -s "$KEYCHAIN_NAME" $(security list-keychains -d user | tr -d '"')
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+          security find-identity -p codesigning -v "$KEYCHAIN_NAME"
 
       - name: 🐎 Mount the DMG
         id: mount
