@@ -96,6 +96,11 @@ jobs:
 
           security find-identity -p codesigning -v "$KEYCHAIN_NAME"
 
+          curl -O https://www.apple.com/certificateauthority/DeveloperIDCA.cer
+          security import DeveloperIDCA.cer -k "$KEYCHAIN_NAME" -T /usr/bin/codesign
+
+          security find-identity -p codesigning -v "$KEYCHAIN_NAME"
+
       - name: 🐎 Mount the DMG
         id: mount
         run: |
