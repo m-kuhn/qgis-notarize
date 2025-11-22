@@ -277,31 +277,26 @@ jobs:
       - name: 📦 Upload notarized DMG to the QGIS download page
         if: github.event_name == 'repository_dispatch' && github.event.action == 'notarize_dmg'
         env:
-          RELEASE: ltr
+          RELEASE: pr
           RELEASE_TAG: ${{ github.event.client_payload.release_tag }}
-          SERVER: qgis-mac-packager-bot@qgis2.qgis.org
-          FOLDER: /var/www/downloads/macos
+          ROOT: s3://qgis-download/macos/
         run: |
-          echo ${{ secrets.SSH_KEY }} > sskey
+          brew install s3cmd
+          echo ${{ secrets.S3CFG }} > ~/.s3cfg
 
-          ROOT="$FOLDER/$RELEASE"
           DMG=$(ls *.dmg | head -n 1)
-
           sha256sum $DMG > $DMG.sha256sum
 
           process_file () {
               LOCAL=$1
               EXTENSION=$2
               FILENAME=$(basename -- "$LOCAL")
-              REMOTE=$ROOT/$FILENAME
-              LINK=$FOLDER/qgis-macos-$RELEASE.$EXTENSION
-              scp -o LogLevel=Error -i sshkey $LOCAL $SERVER:$REMOTE
-              ssh -o LogLevel=Error -i sshkey $SERVER "rm -f $LINK"
-              ssh -o LogLevel=Error -i sshkey $SERVER "ln -s $REMOTE $LINK"
+
+              s3cmd put $LOCAL $ROOT/$RELEASE/$FILENAME
+              s3cmd put $LOCAL $ROOT/qgis-macos-$RELEASE.$EXTENSION
           }
 
-          echo "Upload $RELEASE_TAG to qgis2.qgis.org"
-          ssh -o LogLevel=Error -i sshkey $SERVER "mkdir -p $ROOT"
+          echo "Upload $RELEASE_TAG"
 
           # upload files
           if [ -f $DMG ]; then
