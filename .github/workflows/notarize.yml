@@ -282,7 +282,7 @@ jobs:
           ROOT: s3://qgis-download/macos/
         run: |
           brew install s3cmd
-          echo ${{ secrets.S3CFG }} > ~/.s3cfg
+          echo "${{ secrets.S3CFG }}" > ~/.s3cfg
 
           DMG=$(ls *.dmg | head -n 1)
           sha256sum $DMG > $DMG.sha256sum
