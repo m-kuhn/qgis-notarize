@@ -279,7 +279,7 @@ jobs:
         env:
           RELEASE: pr
           RELEASE_TAG: ${{ github.event.client_payload.release_tag }}
-          ROOT: s3://qgis-download/macos/
+          ROOT: s3://qgis-download/macos
         run: |
           brew install s3cmd
           echo "${{ secrets.S3CFG }}" > ~/.s3cfg
