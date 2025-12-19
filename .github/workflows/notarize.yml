@@ -73,14 +73,14 @@ jobs:
           fi
 
           RELEASE_TAG=${{ github.event.client_payload.release_tag }}
-          URL="https://github.com/m-kuhn/QGIS/releases/download/${RELEASE_TAG}/QGIS-${RELEASE_TAG}-Installer.dmg"
+          URL="https://github.com/m-kuhn/QGIS/releases/download/${RELEASE_TAG}/QGIS-Installer.dmg"
 
           echo "Downloading DMG from $URL"
           mkdir -p downloaded-artifacts
-          curl -fL "$URL" -o downloaded-artifacts/QGIS-${RELEASE_TAG}-Installer.dmg
+          curl -fL "$URL" -o downloaded-artifacts/QGIS-Installer.dmg
 
           # expose a predictable name for downstream steps
-          echo "ARTIFACT_NAME=QGIS-${RELEASE_TAG}-Installer.dmg" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=QGIS-Installer.dmg" >> $GITHUB_ENV
             
       - name: 🔑 Import signing certificate
         run: |
