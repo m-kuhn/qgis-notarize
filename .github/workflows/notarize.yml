@@ -290,9 +290,8 @@ jobs:
           process_file () {
               LOCAL=$1
               EXTENSION=$2
-              FILENAME=$(basename -- "$LOCAL")
 
-              s3cmd put $LOCAL $ROOT/$RELEASE/$FILENAME
+              s3cmd put $LOCAL $ROOT/$RELEASE/qgis_pr_$RELEASE_TAG.$EXTENSION
               s3cmd put $LOCAL $ROOT/qgis-macos-$RELEASE.$EXTENSION
           }
 
