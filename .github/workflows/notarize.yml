@@ -81,6 +81,11 @@ jobs:
 
           # expose a predictable name for downstream steps
           echo "ARTIFACT_NAME=QGIS-Installer.dmg" >> $GITHUB_ENV
+
+          SPLASH_URL="https://github.com/m-kuhn/QGIS/refs/tags/${RELEASE_TAG}/images/splash/splash.png"
+
+          echo "Downloading splash screen from $SPLASH_URL"
+          curl -fL "$SPLASH_URL" -o downloaded-artifacts/splash.png
             
       - name: 🔑 Import signing certificate
         run: |
@@ -301,4 +306,5 @@ jobs:
           if [ -f $DMG ]; then
               process_file $DMG dmg
               process_file $DMG.sha256sum sha256sum
+              process_file downloaded-artifacts/splash.png png
           fi
