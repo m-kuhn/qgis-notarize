@@ -82,7 +82,7 @@ jobs:
           # expose a predictable name for downstream steps
           echo "ARTIFACT_NAME=QGIS-Installer.dmg" >> $GITHUB_ENV
 
-          SPLASH_URL="https://github.com/m-kuhn/QGIS/refs/tags/${RELEASE_TAG}/images/splash/splash.png"
+          SPLASH_URL="https://raw.githubusercontent.com/m-kuhn/QGIS/refs/tags/${RELEASE_TAG}/images/splash/splash.png"
 
           echo "Downloading splash screen from $SPLASH_URL"
           curl -fL "$SPLASH_URL" -o downloaded-artifacts/splash.png
