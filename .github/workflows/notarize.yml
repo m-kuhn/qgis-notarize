@@ -194,7 +194,7 @@ jobs:
           find "$APP_PATH/Contents/Frameworks" -name "*.app" -maxdepth 3
 
           echo "=== Non-Mach-O files in MacOS/ ==="
-          find "$APP_PATH/Contents/MacOS" -type f -exec file {} \; | grep -v 'Mach-O'
+          find "$APP_PATH/Contents/MacOS" -type f -exec file {} \; | grep -v 'Mach-O' || true
 
       - name: Sign
         run: |
