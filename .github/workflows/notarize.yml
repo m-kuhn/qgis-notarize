@@ -199,21 +199,37 @@ jobs:
       - name: Sign
         run: |
           APP_PATH=$(echo ./*.app)
+          MACOS_DIR="$APP_PATH/Contents/MacOS"
+
           echo "::group::Sign all libraries inside the .app"
-          # Step 1a: Sign all libraries inside the .app
+          # Step 1a: Sign all .so/.dylib files
           find "$APP_PATH" -type f \( -name "*.so" -or -name "*.dylib" \) -print0 | while IFS= read -r -d '' file; do
             echo "Signing: $file"
             codesign --force --sign "Developer ID Application" --timestamp --keychain "$KEYCHAIN_NAME" "$file" || {
               echo "⚠️ Failed to sign: $file"
             }
-            codesign -dv "$file" 2>&1 | grep -i 'identifier\|signing time\|authority\|flags\|CDHash' || echo "❌ $file is unsigned or broken"
+          done
+          echo "::endgroup::"
+
+          echo "::group::Pre-sign MacOS subcomponents (excluding main QGIS binary)"
+          # Step 1b-pre: Sign all Mach-O executables in MacOS/ EXCEPT the main QGIS binary
+          # This ensures codesign's inside-out order is respected
+          find "$MACOS_DIR" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do
+            [ "$file" = "$MACOS_DIR/QGIS" ] && continue
+            if ! file "$file" | grep -q 'Mach-O'; then
+              echo "Skipping non-Mach-O: $file"
+              continue
+            fi
+            echo "Pre-signing subcomponent: $file"
+            codesign --force --sign "Developer ID Application" --options runtime --timestamp --keychain "$KEYCHAIN_NAME" "$file" || {
+              echo "⚠️ Failed to sign: $file"
+            }
           done
           echo "::endgroup::"
 
           echo "::group::Sign all executables inside the .app"
-          # Step 1b: Sign all executables inside the .app
+          # Step 1b: Sign remaining Mach-O executables (now gdalmdimtranslate etc. are already signed)
           find "$APP_PATH" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do
-            # Skip non-Mach-O files (scripts, etc.)
             if ! file "$file" | grep -q 'Mach-O'; then
               echo "Skipping non-Mach-O: $file"
               continue
@@ -227,15 +243,13 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Sign top-level .app"
-          # Step 2: Sign top-level .app with hardened runtime (for notarization)
+          # Step 2: Sign top-level .app with hardened runtime
           codesign --force --options runtime --entitlements entitlements.plist --sign "Developer ID Application" --timestamp --keychain "$KEYCHAIN_NAME" "$APP_PATH"
           echo "::endgroup::"
 
           echo "::group::Verify"
-          # Step 3: Verify
           codesign --verify --deep --strict "$APP_PATH"
           echo "::endgroup::"
-
 
       - name: 🔧 Recreate DMG (clean signed app)
         run: |
