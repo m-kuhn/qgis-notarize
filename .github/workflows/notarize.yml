@@ -198,11 +198,19 @@ jobs:
 
       - name: Sign
         run: |
-          APP_PATH=$(echo ./*.app)
+          # Resolve the app bundle deterministically (handle spaces safely)
+          APP_PATH="$(find . -maxdepth 1 -type d -name '*.app' -print -quit)"
+
+          if [ -z "$APP_PATH" ] || [ ! -d "$APP_PATH" ]; then
+            echo "❌ No .app found in workspace root after mounting/copying DMG"
+            echo "Workspace contents:"
+            ls -la
+            exit 1
+          fi
+
           MACOS_DIR="$APP_PATH/Contents/MacOS"
 
           echo "::group::Sign all libraries inside the .app"
-          # Step 1a: Sign all .so/.dylib files
           find "$APP_PATH" -type f \( -name "*.so" -or -name "*.dylib" \) -print0 | while IFS= read -r -d '' file; do
             echo "Signing: $file"
             codesign --force --sign "Developer ID Application" --timestamp --keychain "$KEYCHAIN_NAME" "$file" || {
@@ -212,8 +220,6 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Pre-sign MacOS subcomponents (excluding main QGIS binary)"
-          # Step 1b-pre: Sign all Mach-O executables in MacOS/ EXCEPT the main QGIS binary
-          # This ensures codesign's inside-out order is respected
           find "$MACOS_DIR" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do
             [ "$file" = "$MACOS_DIR/QGIS" ] && continue
             if ! file "$file" | grep -q 'Mach-O'; then
@@ -228,7 +234,6 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Sign all executables inside the .app"
-          # Step 1b: Sign remaining Mach-O executables (now gdalmdimtranslate etc. are already signed)
           find "$APP_PATH" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do
             if ! file "$file" | grep -q 'Mach-O'; then
               echo "Skipping non-Mach-O: $file"
@@ -243,7 +248,6 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Sign top-level .app"
-          # Step 2: Sign top-level .app with hardened runtime
           codesign --force --options runtime --entitlements entitlements.plist --sign "Developer ID Application" --timestamp --keychain "$KEYCHAIN_NAME" "$APP_PATH"
           echo "::endgroup::"
 
