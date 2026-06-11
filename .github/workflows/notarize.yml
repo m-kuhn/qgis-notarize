@@ -157,6 +157,9 @@ jobs:
           echo "::group::Sign all Mach-O files"
           find "$APP_PATH" -type f -print0 |
           while IFS= read -r -d '' file; do
+            case "$file" in
+              *.py|*.pyw|*.sh|*.pl) continue ;;
+            esac
             if file -b "$file" | grep -q 'Mach-O'; then
               echo "Signing Mach-O: $file"
               codesign --force \
