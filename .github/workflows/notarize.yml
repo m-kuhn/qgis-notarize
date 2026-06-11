@@ -129,41 +129,58 @@ jobs:
 
           APP_PATH=$(echo ./*.app)
 
-          echo "::group::Remove leftover files"
+          echo "::group::Clean bundle"
           find "$APP_PATH" -type f \( -name "*.o" -o -name "*.a" -o -name "*.prl" -o -name "*.la" -o -name "*.pyc" \) -delete
           rm -f "$APP_PATH/Contents/PlugIns/qtdeploy.ps1"
           echo "::endgroup::"
 
-          echo "::group::Sign libraries"
-          find "$APP_PATH" -type f \( -name "*.dylib" -o -name "*.so" \) -print0 |
-          while IFS= read -r -d '' file; do
-            echo "Signing library: $file"
-            codesign --force --sign "Developer ID Application" \
-              --timestamp \
-              --keychain "$KEYCHAIN_NAME" \
-              "$file"
-          done
-          echo "::endgroup::"
-
-          echo "::group::Sign nested executables in Contents/MacOS"
-          find "$APP_PATH/Contents/MacOS" -type f -perm -111 -print0 |
-          while IFS= read -r -d '' file; do
-            echo "Signing executable: $file"
-            codesign --force --sign "Developer ID Application" \
+          echo "::group::Sign nested app/framework/plugin bundles first"
+          find "$APP_PATH/Contents" \( \
+            -name "*.app" -o \
+            -name "*.framework" -o \
+            -name "*.xpc" -o \
+            -name "*.appex" -o \
+            -name "*.bundle" -o \
+            -name "*.plugin" \) -print0 |
+          while IFS= read -r -d '' item; do
+            [ "$item" = "$APP_PATH" ] && continue
+            echo "Signing bundle: $item"
+            codesign --force \
+              --sign "Developer ID Application" \
               --options runtime \
               --timestamp \
               --keychain "$KEYCHAIN_NAME" \
-              "$file"
+              "$item"
           done
           echo "::endgroup::"
 
-          echo "::group::Verify qgis_process explicitly"
-          if [ -f "$APP_PATH/Contents/MacOS/qgis_process" ]; then
-            codesign --verify --strict --verbose=4 "$APP_PATH/Contents/MacOS/qgis_process"
-          fi
+          echo "::group::Sign all Mach-O files"
+          find "$APP_PATH" -type f -print0 |
+          while IFS= read -r -d '' file; do
+            if file -b "$file" | grep -q 'Mach-O'; then
+              echo "Signing Mach-O: $file"
+              codesign --force \
+                --sign "Developer ID Application" \
+                --timestamp \
+                --keychain "$KEYCHAIN_NAME" \
+                "$file"
+            fi
+          done
           echo "::endgroup::"
 
-          echo "::group::Sign app bundle"
+          echo "::group::Verify critical CLI tools"
+          for tool in \
+            "$APP_PATH/Contents/MacOS/qgis_process" \
+            "$APP_PATH/Contents/MacOS/gdal_translate"
+          do
+            if [ -f "$tool" ]; then
+              echo "Verifying $tool"
+              codesign --verify --strict --verbose=4 "$tool"
+            fi
+          done
+          echo "::endgroup::"
+
+          echo "::group::Sign top-level app"
           codesign --force \
             --sign "Developer ID Application" \
             --options runtime \
@@ -173,7 +190,7 @@ jobs:
             "$APP_PATH"
           echo "::endgroup::"
 
-          echo "::group::Verify app bundle"
+          echo "::group::Verify app"
           codesign --verify --deep --strict --verbose=4 "$APP_PATH"
           echo "::endgroup::"
 
