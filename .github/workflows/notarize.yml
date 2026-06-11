@@ -184,7 +184,7 @@ jobs:
 
           echo "::group::Pre-sign nested sub-components"
           # Sign known nested executables before the parent binary
-          find "$APP_PATH/Contents/MacOS" -type f -not -name "$(basename $APP_PATH .app)*" -perm +111 -print0 | while IFS= read -r -d '' file; do
+          find "$APP_PATH/Contents/MacOS" -type f -not -name "$(basename $APP_PATH .app)*" -perm /111 -print0 | while IFS= read -r -d '' file; do
             echo "Pre-signing sub-component: $file"
             codesign --force --sign "Developer ID Application" --options runtime --timestamp --keychain "$KEYCHAIN_NAME" "$file" || {
               echo "⚠️ Failed to pre-sign: $file"
@@ -194,7 +194,7 @@ jobs:
 
           echo "::group::Sign all executables inside the .app"
           # Step 1b: Sign all executables inside the .app
-          find "$APP_PATH" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do
+          find "$APP_PATH" -type f -perm /111 -print0 | while IFS= read -r -d '' file; do
             echo "Signing: $file"
             codesign --force --sign "Developer ID Application" --options runtime --timestamp --keychain "$KEYCHAIN_NAME" "$file" || {
               echo "⚠️ Failed to sign: $file"
