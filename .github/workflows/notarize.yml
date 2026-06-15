@@ -260,7 +260,7 @@ jobs:
           echo "NOTARIZATION_ID=$NOTARIZATION_ID" >> "$GITHUB_ENV"
 
       - name: 📄 Show notarization log
-        if: always()
+        if: always() && env.NOTARIZATION_ID != ''
         run: |
           echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > authkey.p8
 
