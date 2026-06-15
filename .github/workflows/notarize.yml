@@ -213,6 +213,10 @@ jobs:
           codesign --verify --deep --strict "$APP_PATH"
           echo "::endgroup::"
 
+  
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: always()
 
       - name: 🔧 Recreate DMG (clean signed app)
         run: |
