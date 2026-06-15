@@ -154,24 +154,27 @@ jobs:
           done
           echo "::endgroup::"
 
-          echo "::group::Sign Mach-O files and executable scripts in Contents/MacOS"
-          find "$APP_PATH" -type f -print0 |
+          echo "::group::Sign dylibs"
+          find "$APP_PATH/Contents" -type f -name "*.dylib" -print0 |
           while IFS= read -r -d '' file; do
-            if file -b "$file" | grep -q 'Mach-O'; then
-              echo "Signing Mach-O: $file"
-              codesign --force \
-                --sign "Developer ID Application" \
-                --timestamp \
-                --keychain "$KEYCHAIN_NAME" \
-                "$file"
-            elif [[ "$file" == "$APP_PATH/Contents/MacOS/"* ]]; then
-              echo "Signing executable resource in Contents/MacOS: $file"
-              codesign --force \
-                --sign "Developer ID Application" \
-                --timestamp \
-                --keychain "$KEYCHAIN_NAME" \
-                "$file"
-            fi
+            echo "Signing dylib: $file"
+            codesign --force \
+              --sign "Developer ID Application" \
+              --timestamp \
+              --keychain "$KEYCHAIN_NAME" \
+              "$file"
+          done
+          echo "::endgroup::"
+
+          echo "::group::Sign Mach-O executables"
+          find "$APP_PATH/Contents/MacOS" -type f -print0 |
+          while IFS= read -r -d '' file; do
+            echo "Signing MacOS payload: $file"
+            codesign --force \
+              --sign "Developer ID Application" \
+              --timestamp \
+              --keychain "$KEYCHAIN_NAME" \
+              "$file"
           done
           echo "::endgroup::"
 
