@@ -154,14 +154,18 @@ jobs:
           done
           echo "::endgroup::"
 
-          echo "::group::Sign all Mach-O files"
+          echo "::group::Sign Mach-O files and executable scripts in Contents/MacOS"
           find "$APP_PATH" -type f -print0 |
           while IFS= read -r -d '' file; do
-            case "$file" in
-              *.py|*.pyw|*.sh|*.pl) continue ;;
-            esac
             if file -b "$file" | grep -q 'Mach-O'; then
               echo "Signing Mach-O: $file"
+              codesign --force \
+                --sign "Developer ID Application" \
+                --timestamp \
+                --keychain "$KEYCHAIN_NAME" \
+                "$file"
+            elif [[ "$file" == "$APP_PATH/Contents/MacOS/"* ]]; then
+              echo "Signing executable resource in Contents/MacOS: $file"
               codesign --force \
                 --sign "Developer ID Application" \
                 --timestamp \
