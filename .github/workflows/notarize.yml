@@ -85,14 +85,14 @@ jobs:
 
           echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
 
-          URL="https://github.com/m-kuhn/QGIS/releases/download/${RELEASE_TAG}/QGIS-Installer.dmg"
+          URL="https://github.com/m-kuhn/QGIS/releases/download/${RELEASE_TAG}/QGIS-LTR-Installer.dmg"
 
           echo "Downloading DMG from $URL"
           mkdir -p downloaded-artifacts
           curl -fL "$URL" -o downloaded-artifacts/QGIS-Installer.dmg
 
           # expose a predictable name for downstream steps
-          echo "ARTIFACT_NAME=QGIS-Installer.dmg" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=QGIS-LTR-Installer.dmg" >> $GITHUB_ENV
 
           SPLASH_URL="https://raw.githubusercontent.com/m-kuhn/QGIS/refs/tags/${RELEASE_TAG}/images/splash/splash.png"
 
