@@ -192,7 +192,14 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Sign nested executables in Contents/MacOS"
+          # Skip main executable (it will be automatically signed with the bundle)
+          APP_MAIN_EXEC="$APP_PATH/Contents/MacOS/$(basename "$APP_PATH" .app)"
           find "$APP_PATH/Contents/MacOS" -type f -print0 | while IFS= read -r -d '' file; do
+            if [ "$file" = "$APP_MAIN_EXEC" ]; then
+              echo "Skipping main app executable for final bundle signing: $file"
+              continue
+            fi
+
             echo "Re-signing executable: $file"
             codesign --remove-signature "$file" 2>/dev/null || true
             codesign --force \
